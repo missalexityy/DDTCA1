@@ -12,12 +12,28 @@ contract Voting {
     }
 
     mapping(address => Vote) public votes;
+    mapping(address => bool) public hasVoted;
 
     // Defining events
     event AddVote(address indexed voter, address receiver, uint256 timestamp);
     event RemoveVote(address voter);
     event StartVoting(address startedBy);
-    event StopVoting(address stoppedBy);
+    event StopVoting(address stoppedBy); 
+
+    modifier onlyDuringVoting {
+        require(isVoting, "Voting is not in progress");
+        _;
+    }
+
+    modifier onlyNotVoted {
+        require(!hasVoted[msg.sender], "You have already voted");
+        _;
+    }
+
+    modifier onlyVoted {
+        require(hasVoted[msg.sender], "You have not voted yet");
+        _;
+    }
 
     constructor() {
         isVoting = false;
@@ -37,23 +53,20 @@ contract Voting {
         return true;
     }
 
-    function addVote(address receiver) external returns (bool) {
-        require(isVoting, "Voting is not in progress");
+    function addVote(address receiver) external onlyDuringVoting onlyNotVoted returns (bool) {
         require(receiver != address(0), "Invalid receiver address");
-        require(votes[msg.sender].timestamp == 0, "You have already voted");
 
         votes[msg.sender].receiver = receiver;
         votes[msg.sender].timestamp = block.timestamp;
+        hasVoted[msg.sender] = true;
 
         emit AddVote(msg.sender, votes[msg.sender].receiver, votes[msg.sender].timestamp);
         return true;
     }
 
-    function removeVote() external returns (bool) {
-        require(isVoting, "Voting is not in progress");
-        require(votes[msg.sender].timestamp != 0, "You have not voted yet");
-
+    function removeVote() external onlyDuringVoting onlyVoted returns (bool) {
         delete votes[msg.sender];
+        hasVoted[msg.sender] = false;
 
         emit RemoveVote(msg.sender);
         return true;

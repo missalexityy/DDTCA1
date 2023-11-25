@@ -13,32 +13,48 @@
         }
       
         div {
-          width: 20%;
+          width: 40%;
           margin: 0 auto;
           display: flex;
           flex-direction: column;
+          border: 1px solid #ccc;
+          padding: 20px;
+          border-radius: 10px;
+          margin-top: 50px;
         }
       
         button {
           width: 100%;
           margin: 10px 0px 5px 0px;
+          padding: 10px;
+          cursor: pointer;
+        }
+      
+        input {
+          width: 100%;
+          padding: 10px;
+          margin-bottom: 10px;
         }
       </style>
-
   </head>
 
   <body>
   <div>
-    <h1>This is my dApp!</h1>
-    <p>Here we can set or get the mood:</p>
-    <label for="mood">Input Mood:</label> <br />
-    <input type="text" id="mood" />
+    <h1>Voting dApp</h1>
+    <p>Use Metamask to interact with the smart contract:</p>
 
-    <button onclick="getMood()">Get Mood</button>
-    <button onclick="setMood()">Set Mood</button>
-    <p id="showMood"></p>
+    <button onclick="startVoting()">Start Voting</button>
+    <button onclick="stopVoting()">Stop Voting</button>
+
+    <label for="receiver">Vote for:</label> <br />
+    <input type="text" id="receiver" placeholder="Enter candidate address" />
+
+    <button onclick="addVote()">Submit Vote</button>
+    <button onclick="removeVote()">Remove Vote</button>
+
+    <p id="showVote"></p>
   </div>
 
+  <script src="script.js"></script>
   </body> 
 </html> 
- 

@@ -9,13 +9,14 @@ contract Voting {
     struct Vote {
         address receiver;
         uint256 timestamp;
+        bytes32 signature;
     }
 
     mapping(address => Vote) public votes;
     mapping(address => bool) public hasVoted;
 
     // Defining events
-    event AddVote(address indexed voter, address receiver, uint256 timestamp);
+    event AddVote(address indexed voter, address receiver, uint256 timestamp, bytes32 signature);
     event RemoveVote(address voter);
     event StartVoting(address startedBy);
     event StopVoting(address stoppedBy); 
@@ -53,14 +54,16 @@ contract Voting {
         return true;
     }
 
-    function addVote(address receiver) external onlyDuringVoting onlyNotVoted returns (bool) {
+    function addVote(address receiver, bytes32 signature) external onlyDuringVoting onlyNotVoted returns (bool) {
         require(receiver != address(0), "Invalid receiver address");
+        require(verifySignature(msg.sender, receiver, signature), "Invalid signature");
 
         votes[msg.sender].receiver = receiver;
         votes[msg.sender].timestamp = block.timestamp;
+        votes[msg.sender].signature = signature;
         hasVoted[msg.sender] = true;
 
-        emit AddVote(msg.sender, votes[msg.sender].receiver, votes[msg.sender].timestamp);
+        emit AddVote(msg.sender, votes[msg.sender].receiver, votes[msg.sender].timestamp, votes[msg.sender].signature);
         return true;
     }
 
@@ -74,5 +77,11 @@ contract Voting {
 
     function getVote(address voterAddress) external view returns (address candidateAddress) {
         return votes[voterAddress].receiver;
+    }
+
+    // Helper function to verify ECDSA signature
+    function verifySignature(address signer, address receiver, bytes32 signature) internal pure returns (bool) {
+        bytes32 messageHash = keccak256(abi.encodePacked(signer, receiver));
+        return signer == ecrecover(messageHash, uint8(signature[0]), bytes32(signature[1]), bytes32(signature[2]));
     }
 }

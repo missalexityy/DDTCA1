@@ -1,87 +1,125 @@
-// Voting System
-// SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
 
-contract Voting {
 
-    bool public isVoting;
+ pragma solidity ^0.8.0;
 
-    struct Vote {
-        address receiver;
-        uint256 timestamp;
-        bytes32 signature;
+// making a voting cantract
+
+// 1. We want the ability to accept proposals and store them
+// proposal: their name, number
+
+// 2. voters & voting ability
+// keep track of voting 
+// check voters are authenticated to vote
+
+// 3. chairman 
+// authenticate anbd deploy contract
+
+contract Ballot{
+
+    // all the code goes here
+
+    // struct is a method to create your own data type
+
+    // voters: voted = bool, access to vote = uint, vote index = unit
+
+    struct Voter{
+        uint vote;
+        bool voted;
+        uint weight;
+    } 
+
+    struct Proposal{
+        // bytes are a basic unit measurement of information in computer processing
+    bytes32 name; //the name of each proposal
+    uint voteCount; // number of accumulated votes
     }
 
-    mapping(address => Vote) public votes;
-    mapping(address => bool) public hasVoted;
+    Proposal[] public proposals;
 
-    // Defining events
-    event AddVote(address indexed voter, address receiver, uint256 timestamp, bytes32 signature);
-    event RemoveVote(address voter);
-    event StartVoting(address startedBy);
-    event StopVoting(address stoppedBy); 
+    // mapping allows for us to create a store value with keys and indexes
+    
+    mapping(address => Voter) public voters; // voters get address as a key and VOter for value
 
-    modifier onlyDuringVoting {
-        require(isVoting, "Voting is not in progress");
-        _;
+    address public chairperson;
+
+    constructor(bytes32[] memory proposalNames)  {
+        // memory difines a temprary data location in Solidity during runtime only
+        // we guatante space for if
+
+        //msg.sender = is a gloabal variable that states  the person 
+        // who is currently connecting to the constract
+        chairperson =msg.sender;
+
+        voters[chairperson].weight = 1;
+
+
+        // will add the proposal names to the smart contract upon deployment
+        for(uint i=0; i < proposalNames.length; i++){
+            proposals.push(Proposal({
+                name: proposalNames[i],
+                voteCount: 0
+            }));
+
+        }
+
     }
 
-    modifier onlyNotVoted {
-        require(!hasVoted[msg.sender], "You have already voted");
-        _;
+    // function authenticate voter
+
+    function giveRightToVote(address voter) public {
+        require(msg.sender == chairperson,
+        'Only the Chairperson can give access to vote');
+                // require that the voter has not voted yet
+        require(!voters[voter].voted,
+                'The voter has already voted');
+        require(voters[voter].weight == 0);
+
+        voters[voter].weight =1;
+        
     }
 
-    modifier onlyVoted {
-        require(hasVoted[msg.sender], "You have not voted yet");
-        _;
+    // function for voting
+
+    function vote(uint proposal) public {
+        Voter storage sender = voters[msg.sender];
+        require(sender.weight !=0, 'Has no right to vote');
+        require(!sender.voted, 'Already voted');
+        sender.voted = true;
+        sender.vote = proposal;
+
+        proposals[proposal].voteCount += sender.weight;
     }
 
-    constructor() {
-        isVoting = false;
+    // functions for showing the results
+
+
+
+    //1.function taht shows the winning proposal by integer
+    
+    function winningProposol() public view returns (uint winningProposal_){
+
+        uint winningVoteCount = 0;
+        for(uint i=0; i < proposals.length; i++){
+            if(proposals[i].voteCount > winningVoteCount) {
+                winningVoteCount = proposals[i].voteCount;
+                winningProposal_ = i;
+
+            }
+        }
+
     }
 
-    function startVoting() external returns (bool) {
-        require(!isVoting, "Voting is already in progress");
-        isVoting = true;
-        emit StartVoting(msg.sender);
-        return true;
-    }
 
-    function stopVoting() external returns (bool) {
-        require(isVoting, "Voting is not in progress");
-        isVoting = false;
-        emit StopVoting(msg.sender);
-        return true;
-    }
+    //2. function that shows the winner by name     
+    function winningName() public view returns ( bytes32 winningName_) {
 
-    function addVote(address receiver, bytes32 signature) external onlyDuringVoting onlyNotVoted returns (bool) {
-        require(receiver != address(0), "Invalid receiver address");
-        require(verifySignature(msg.sender, receiver, signature), "Invalid signature");
+        winningName_ = proposals[winningProposal()].name;
 
-        votes[msg.sender].receiver = receiver;
-        votes[msg.sender].timestamp = block.timestamp;
-        votes[msg.sender].signature = signature;
-        hasVoted[msg.sender] = true;
 
-        emit AddVote(msg.sender, votes[msg.sender].receiver, votes[msg.sender].timestamp, votes[msg.sender].signature);
-        return true;
-    }
 
-    function removeVote() external onlyDuringVoting onlyVoted returns (bool) {
-        delete votes[msg.sender];
-        hasVoted[msg.sender] = false;
-
-        emit RemoveVote(msg.sender);
-        return true;
-    }
-
-    function getVote(address voterAddress) external view returns (address candidateAddress) {
-        return votes[voterAddress].receiver;
-    }
-
-    // Helper function to verify ECDSA signature
-    function verifySignature(address signer, address receiver, bytes32 signature) internal pure returns (bool) {
-        bytes32 messageHash = keccak256(abi.encodePacked(signer, receiver));
-        return signer == ecrecover(messageHash, uint8(signature[0]), bytes32(signature[1]), bytes32(signature[2]));
     }
 }
+
+
+
+

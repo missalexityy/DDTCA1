@@ -7,7 +7,7 @@ pragma solidity ^0.8.0;
 // 1. We want the ability to accept proposals and store them
 // proposal: their name, number
 
-// 2. voters & voting ability
+// 2. voters & voting ability 
 // keep track of voting 
 // check voters are authenticated to vote
 
